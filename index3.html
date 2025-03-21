@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Dino Run Mobile</title>
+    <style>
+        /* Reset dan variabel */
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #4cc9f0;
+            --accent-color: #7209b7;
+            --ground-color: #3a5a40;
+            --cloud-color: #f8f9fa;
+            --text-color: #212529;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Tampilan utama */
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to bottom, var(--secondary-color), var(--primary-color));
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            touch-action: manipulation;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 60vh;
+            max-height: 500px;
+            border-bottom: 8px solid var(--ground-color);
+            background: linear-gradient(to bottom, #e0f7fa, #bbdefb);
+            overflow: hidden;
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Clouds background */
+        .cloud {
+            position: absolute;
+            width: 80px;
+            height: 40px;
+            background: var(--cloud-color);
+            border-radius: 50px;
+            opacity: 0.8;
+            animation: cloudMove linear infinite;
+        }
+
+        @keyframes cloudMove {
+            0% {
+                left: 100%;
+            }
+            100% {
+                left: -10%;
+            }
+        }
+
+        /* Dino */
+        #dino {
+            width: 60px;
+            height: 60px;
+            background: url('https://i.imgur.com/6LmYzxf.png') no-repeat center/contain;
+            position: absolute;
+            bottom: 0;
+            left: 50px;
+            z-index: 5;
+            transition: transform 0.1s;
+        }
+
+        #dino.jump {
+            animation: dinoJump 0.8s ease-out;
+        }
+
+        @keyframes dinoJump {
+            0% { transform: translateY(0); }
+            40% { transform: translateY(-150px); }
+            60% { transform: translateY(-150px); }
+            100% { transform: translateY(0); }
+        }
+
+        /* Rintangan */
+        .obstacle {
+            width: 40px;
+            height: 60px;
+            background: url('https://i.imgur.com/J6WcXkF.png') no-repeat center/contain;
+            position: absolute;
+            bottom: 0;
+            z-index: 4;
+        }
+
+        /* Skor */
+        #score-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px 15px;
+            border-radius: 30px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        #score {
+            font-size: 24px;
+            color: var(--text-color);
+            font-weight: bold;
+        }
+
+        /* Game Over */
+        #game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+            display: none;
+            text-align: center;
+            z-index: 10;
+        }
+
+        #game-over h2 {
+            font-size: 32px;
+            color: #d90429;
+            margin-bottom: 10px;
+        }
+
+        #game-over span {
+            font-size: 20px;
+            color: #555;
+        }
+
+        #final-score {
+            font-size: 28px;
+            color: var(--accent-color);
+            margin: 15px 0;
+        }
+
+        /* Tombol Kontrol (Mobile) */
+        #controls {
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 15px 0;
+            width: 45%;
+            max-width: 180px;
+            font-size: 20px;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s;
+        }
+
+        #jump-btn {
+            background: linear-gradient(to bottom right, #4CC9F0, #4361ee);
+        }
+
+        #restart-btn {
+            background: linear-gradient(to bottom right, #7209b7, #560bad);
+        }
+
+        button:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Day/Night Toggle */
+        #day-night-toggle {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #f8f9fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 6;
+        }
+
+        #day-night-toggle i {
+            font-size: 24px;
+            color: #212529;
+        }
+
+        /* Night mode */
+        body.night-mode {
+            background: linear-gradient(to bottom, #1a1a2e, #16213e);
+        }
+
+        body.night-mode #game-container {
+            background: linear-gradient(to bottom, #0d1b2a, #1b263b);
+        }
+
+        body.night-mode .cloud {
+            background: #415a77;
+            opacity: 0.4;
+        }
+
+        body.night-mode #score-container {
+            background: rgba(65, 90, 119, 0.8);
+        }
+
+        body.night-mode #score {
+            color: #e0e1dd;
+        }
+
+        /* Responsive */
+        @media (max-height: 600px) {
+            #game-container {
+                height: 50vh;
+            }
+            
+            #controls {
+                margin-top: 10px;
+            }
+            
+            button {
+                padding: 10px 0;
+            }
+        }
+
+        @media (max-width: 500px) {
+            #dino {
+                left: 30px;
+            }
+            
+            #day-night-toggle {
+                width: 40px;
+                height: 40px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+
+<body>
+    <div id="game-container">
+        <!-- Clouds will be added by JS -->
+        <div id="dino"></div>
+        
+        <div id="score-container">
+            <div id="score">Score: 0</div>
+        </div>
+        
+        <div id="day-night-toggle">
+            <i class="fas fa-moon"></i>
+        </div>
+        
+        <div id="game-over">
+            <h2>GAME OVER!</h2>
+            <div id="final-score">Score: 0</div>
+            <span>Tap "Restart" to Play Again</span>
+        </div>
+    </div>
+
+    <!-- Tombol kontrol di HP -->
+    <div id="controls">
+        <button id="jump-btn" ontouchstart="jump()">LOMPAT</button>
+        <button id="restart-btn" ontouchstart="restartGame()">RESTART</button>
+    </div>
+
+    <script>
+        const dino = document.getElementById('dino');
+        const gameContainer = document.getElementById('game-container');
+        const scoreDisplay = document.getElementById('score');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const gameOverText = document.getElementById('game-over');
+        const dayNightToggle = document.getElementById('day-night-toggle');
+        const toggleIcon = dayNightToggle.querySelector('i');
+
+        let isJumping = false;
+        let score = 0;
+        let gameSpeed = 5;
+        let gameOver = false;
+        let obstacleInterval;
+        let scoreInterval;
+        let isNightMode = false;
+
+        // Cloud generator
+        function createClouds() {
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    createCloud();
+                }, i * 3000);
+            }
+            
+            setInterval(createCloud, 15000);
+        }
+
+        function createCloud() {
+            const cloud = document.createElement('div');
+            cloud.classList.add('cloud');
+            
+            const top = Math.random() * (gameContainer.clientHeight / 2);
+            const size = Math.random() * 50 + 50;
+            const duration = Math.random() * 30 + 30;
+            
+            cloud.style.top = top + 'px';
+            cloud.style.width = size + 'px';
+            cloud.style.height = size / 2 + 'px';
+            cloud.style.animationDuration = duration + 's';
+            
+            gameContainer.appendChild(cloud);
+            
+            setTimeout(() => {
+                cloud.remove();
+            }, duration * 1000);
+        }
+
+        // Day/Night toggle
+        dayNightToggle.addEventListener('click', () => {
+            isNightMode = !isNightMode;
+            document.body.classList.toggle('night-mode');
+            toggleIcon.className = isNightMode ? 'fas fa-sun' : 'fas fa-moon';
+        });
+
+        // Optimized jump function for touch
+        function jump() {
+            if (isJumping || gameOver) return;
+            isJumping = true;
+            dino.classList.add('jump');
+            
+            setTimeout(() => {
+                dino.classList.remove('jump');
+                isJumping = false;
+            }, 800);
+        }
+
+        // Update score
+        function startScoring() {
+            scoreInterval = setInterval(() => {
+                if (!gameOver) {
+                    score++;
+                    scoreDisplay.innerText = `Score: ${score}`;
+                    
+                    // Increase game speed every 100 points
+                    if (score % 100 === 0 && gameSpeed < 12) {
+                        gameSpeed += 0.5;
+                    }
+                }
+            }, 200);
+        }
+
+        // Fungsi buat rintangan
+        function createObstacle() {
+            const obstacle = document.createElement('div');
+            obstacle.classList.add('obstacle');
+            gameContainer.appendChild(obstacle);
+
+            let obstaclePosition = gameContainer.clientWidth;
+            obstacle.style.left = obstaclePosition + 'px';
+
+            const moveObstacle = setInterval(() => {
+                if (gameOver) {
+                    clearInterval(moveObstacle);
+                    return;
+                }
+
+                if (obstaclePosition < -40) {
+                    clearInterval(moveObstacle);
+                    obstacle.remove();
+                }
+
+                obstaclePosition -= gameSpeed;
+                obstacle.style.left = obstaclePosition + 'px';
+
+                // Deteksi tabrakan
+                const dinoRect = dino.getBoundingClientRect();
+                const obstacleRect = obstacle.getBoundingClientRect();
+
+                if (
+                    dinoRect.right > obstacleRect.left &&
+                    dinoRect.left < obstacleRect.right &&
+                    dinoRect.bottom > obstacleRect.top
+                ) {
+                    endGame();
+                }
+            }, 20);
+        }
+
+        // Start obstacle generation
+        function startObstacles() {
+            // Initial obstacle
+            setTimeout(createObstacle, 1000);
+            
+            // Regular obstacles
+            obstacleInterval = setInterval(() => {
+                if (!gameOver) {
+                    createObstacle();
+                }
+            }, Math.random() * 1500 + 1500);
+        }
+
+        // Fungsi game over
+        function endGame() {
+            gameOver = true;
+            gameOverText.style.display = 'block';
+            finalScoreDisplay.innerText = `Score: ${score}`;
+            clearInterval(obstacleInterval);
+            clearInterval(scoreInterval);
+            
+            // Add shake animation to dino
+            dino.style.animation = 'shake 0.5s';
+        }
+
+        // Restart game
+        function restartGame() {
+            gameOver = false;
+            score = 0;
+            gameSpeed = 5;
+            scoreDisplay.innerText = 'Score: 0';
+            gameOverText.style.display = 'none';
+            
+            // Remove all obstacles
+            gameContainer.querySelectorAll('.obstacle').forEach((obstacle) => obstacle.remove());
+            
+            // Reset dino animation
+            dino.style.animation = '';
+            
+            // Clear intervals and restart game
+            clearInterval(obstacleInterval);
+            clearInterval(scoreInterval);
+            startObstacles();
+            startScoring();
+        }
+
+        // Kontrol keyboard (untuk desktop)
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') jump();
+            if (e.code === 'KeyR' && gameOver) restartGame();
+        });
+
+        // Prevent scrolling on mobile when tapping game buttons
+        document.getElementById('jump-btn').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            jump();
+        });
+
+        document.getElementById('restart-btn').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            restartGame();
+        });
+
+        // Setup touch for whole screen (alternative jump method)
+        gameContainer.addEventListener('touchstart', (e) => {
+            if (!gameOver) {
+                e.preventDefault();
+                jump();
+            }
+        });
+
+        // Initialize game
+        function initGame() {
+            createClouds();
+            startObstacles();
+            startScoring();
+        }
+
+        // Start game on load
+        window.onload = initGame;
+    </script>
+
+</body>
+
+</html>
